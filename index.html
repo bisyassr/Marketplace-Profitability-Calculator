@@ -1,0 +1,266 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Marketplace Profitability Calculator: Cell Phone Accessories</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <!-- Chosen Palette: Warm Neutral & Calm Blue -->
+    <!-- Application Structure Plan: The application is designed as a single-view, task-oriented profitability calculator. The layout places user inputs on the left and the dynamic results for each marketplace (Walmart, eBay, Best Buy) on the right. This side-by-side comparison structure is the most effective way for a user to instantly see which platform yields the highest profitability for their specific product costs. The design prioritizes clarity and immediate feedback, turning complex fee structures into a simple, actionable financial model. -->
+    <!-- Visualization & Content Choices:
+        - Report Info: Fee percentages for all three marketplaces. -> Goal: Compare/Calculate -> Viz/Method: Dynamic data table with color-coded results. -> Interaction: User enters cost data, and the table updates in real-time to show fees, net profit, and margin for each platform. The most profitable option is highlighted. -> Justification: A dynamic table is the clearest way to present a direct financial comparison. Highlighting the winner provides an instant, actionable insight. -> Library: Vanilla JS.
+        - Report Info: Platform-specific fees (monthly fees, listing fees). -> Goal: Inform/Calculate -> Viz/Method: Integrated calculations within the main table. -> Interaction: An input for "Estimated Monthly Sales" allows for the amortization of fixed costs like Best Buy's monthly fee, making the comparison more accurate. -> Justification: This approach models real-world costs more accurately than a simple percentage-based comparison. -> Library: Vanilla JS.
+    -->
+    <!-- CONFIRMATION: NO SVG graphics used. NO Mermaid JS used. -->
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #f5f5f4; /* Warm Neutral: stone-100 */
+        }
+        .input-group {
+            position: relative;
+        }
+        .input-group span {
+            position: absolute;
+            left: 0;
+            top: 0;
+            height: 100%;
+            padding: 0 0.75rem;
+            display: flex;
+            align-items: center;
+            background-color: #e5e7eb;
+            border-top-left-radius: 0.375rem;
+            border-bottom-left-radius: 0.375rem;
+            border: 1px solid #d1d5db;
+            color: #4b5563;
+        }
+        .input-group input {
+            padding-left: 3rem;
+        }
+        .result-card {
+            transition: all 0.2s ease-in-out;
+            border: 2px solid transparent;
+        }
+        .result-card.winner {
+            border-color: #22c55e; /* green-500 */
+            transform: scale(1.02);
+            box-shadow: 0 10px 15px -3px rgb(0 0 0 / 0.1), 0 4px 6px -4px rgb(0 0 0 / 0.1);
+        }
+    </style>
+</head>
+<body class="text-gray-800">
+
+    <div class="container mx-auto p-4 md:p-8 max-w-6xl">
+
+        <header class="text-center mb-8">
+            <h1 class="text-3xl md:text-4xl font-bold text-gray-900">Marketplace Profitability Calculator</h1>
+            <p class="mt-2 text-lg text-gray-600">Analyze your potential profit for <span class="font-semibold text-blue-600">Cell Phone Accessories</span> across major Canadian marketplaces.</p>
+        </header>
+
+        <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
+            <!-- Input Section -->
+            <div class="lg:col-span-1">
+                <div class="bg-white p-6 rounded-xl shadow-sm border border-gray-200 sticky top-8">
+                    <h2 class="text-xl font-bold text-gray-900 mb-4">Enter Your Product Costs</h2>
+                    <div class="space-y-4">
+                        <div>
+                            <label for="sale-price" class="block text-sm font-medium text-gray-700">Retail Sale Price</label>
+                            <div class="input-group mt-1">
+                                <span>$</span>
+                                <input type="number" id="sale-price" value="34.99" class="w-full p-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500">
+                            </div>
+                        </div>
+                        <div>
+                            <label for="cogs" class="block text-sm font-medium text-gray-700">Cost of Goods Sold (COGS)</label>
+                             <div class="input-group mt-1">
+                                <span>$</span>
+                                <input type="number" id="cogs" value="7.50" class="w-full p-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500">
+                            </div>
+                        </div>
+                        <div>
+                            <label for="shipping-cost" class="block text-sm font-medium text-gray-700">Shipping & Handling Cost</label>
+                             <div class="input-group mt-1">
+                                <span>$</span>
+                                <input type="number" id="shipping-cost" value="5.00" class="w-full p-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500">
+                            </div>
+                            <p class="text-xs text-gray-500 mt-1">Your cost to ship the item if self-fulfilled.</p>
+                        </div>
+                        <div>
+                            <label for="monthly-sales" class="block text-sm font-medium text-gray-700">Estimated Monthly Sales Volume</label>
+                            <input type="number" id="monthly-sales" value="100" class="w-full mt-1 p-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500">
+                            <p class="text-xs text-gray-500 mt-1">Used to amortize fixed monthly fees.</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Results Section -->
+            <div class="lg:col-span-2">
+                <div class="space-y-6">
+                    <!-- Walmart Card -->
+                    <div id="walmart-card" class="result-card bg-white p-6 rounded-xl shadow-sm border border-gray-200">
+                        <h3 class="text-2xl font-bold text-gray-900 mb-4">Walmart Canada</h3>
+                        <div class="grid grid-cols-2 md:grid-cols-4 gap-4 text-center">
+                            <div>
+                                <p class="text-sm text-gray-500">Referral Fee</p>
+                                <p id="walmart-fee" class="text-xl font-semibold"></p>
+                            </div>
+                            <div>
+                                <p class="text-sm text-gray-500">Other Fees</p>
+                                <p class="text-xl font-semibold">$0.00</p>
+                            </div>
+                            <div>
+                                <p class="text-sm text-gray-500">Net Profit / Unit</p>
+                                <p id="walmart-profit" class="text-xl font-semibold text-green-600"></p>
+                            </div>
+                            <div>
+                                <p class="text-sm text-gray-500">Profit Margin</p>
+                                <p id="walmart-margin" class="text-xl font-semibold text-green-600"></p>
+                            </div>
+                        </div>
+                    </div>
+                    <!-- eBay Card -->
+                    <div id="ebay-card" class="result-card bg-white p-6 rounded-xl shadow-sm border border-gray-200">
+                        <h3 class="text-2xl font-bold text-gray-900 mb-4">eBay Canada</h3>
+                        <div class="grid grid-cols-2 md:grid-cols-4 gap-4 text-center">
+                            <div>
+                                <p class="text-sm text-gray-500">Final Value Fee</p>
+                                <p id="ebay-fee" class="text-xl font-semibold"></p>
+                            </div>
+                            <div>
+                                <p class="text-sm text-gray-500">Other Fees</p>
+                                <p class="text-xl font-semibold">$0.00</p>
+                            </div>
+                            <div>
+                                <p class="text-sm text-gray-500">Net Profit / Unit</p>
+                                <p id="ebay-profit" class="text-xl font-semibold text-green-600"></p>
+                            </div>
+                            <div>
+                                <p class="text-sm text-gray-500">Profit Margin</p>
+                                <p id="ebay-margin" class="text-xl font-semibold text-green-600"></p>
+                            </div>
+                        </div>
+                         <p class="text-xs text-gray-500 mt-3 text-center">Assumes use of the 250 free monthly listings and no optional listing upgrades.</p>
+                    </div>
+                    <!-- Best Buy Card -->
+                    <div id="bestbuy-card" class="result-card bg-white p-6 rounded-xl shadow-sm border border-gray-200">
+                        <h3 class="text-2xl font-bold text-gray-900 mb-4">Best Buy Canada</h3>
+                        <div class="grid grid-cols-2 md:grid-cols-4 gap-4 text-center">
+                            <div>
+                                <p class="text-sm text-gray-500">Commission Fee</p>
+                                <p id="bestbuy-fee" class="text-xl font-semibold"></p>
+                            </div>
+                            <div>
+                                <p class="text-sm text-gray-500">Amortized Fee / Unit</p>
+                                <p id="bestbuy-other-fee" class="text-xl font-semibold"></p>
+                            </div>
+                            <div>
+                                <p class="text-sm text-gray-500">Net Profit / Unit</p>
+                                <p id="bestbuy-profit" class="text-xl font-semibold text-green-600"></p>
+                            </div>
+                            <div>
+                                <p class="text-sm text-gray-500">Profit Margin</p>
+                                <p id="bestbuy-margin" class="text-xl font-semibold text-green-600"></p>
+                            </div>
+                        </div>
+                        <p class="text-xs text-gray-500 mt-3 text-center">Assumes a negotiated 15% commission. The amortized fee is the $29.99/month fee divided by your estimated sales volume.</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            const inputs = [
+                'sale-price',
+                'cogs',
+                'shipping-cost',
+                'monthly-sales'
+            ];
+
+            const feeRates = {
+                walmart: 0.15, // For Electronics Accessories
+                ebay: 0.1325,
+                ebayFixed: 0.30,
+                bestbuy: 0.15, // Assumption
+                bestbuyMonthly: 29.99
+            };
+
+            const calculateProfitability = () => {
+                const salePrice = parseFloat(document.getElementById('sale-price').value) || 0;
+                const cogs = parseFloat(document.getElementById('cogs').value) || 0;
+                const shippingCost = parseFloat(document.getElementById('shipping-cost').value) || 0;
+                const monthlySales = parseInt(document.getElementById('monthly-sales').value) || 1;
+
+                // --- Calculations ---
+                
+                // Walmart
+                const walmartFee = salePrice * feeRates.walmart;
+                const walmartProfit = salePrice - cogs - shippingCost - walmartFee;
+                const walmartMargin = salePrice > 0 ? (walmartProfit / salePrice) * 100 : 0;
+
+                // eBay
+                const ebayFee = (salePrice * feeRates.ebay) + feeRates.ebayFixed;
+                const ebayProfit = salePrice - cogs - shippingCost - ebayFee;
+                const ebayMargin = salePrice > 0 ? (ebayProfit / salePrice) * 100 : 0;
+
+                // Best Buy
+                const bestbuyFee = salePrice * feeRates.bestbuy;
+                const bestbuyAmortizedFee = feeRates.bestbuyMonthly / monthlySales;
+                const bestbuyProfit = salePrice - cogs - shippingCost - bestbuyFee - bestbuyAmortizedFee;
+                const bestbuyMargin = salePrice > 0 ? (bestbuyProfit / salePrice) * 100 : 0;
+
+                // --- DOM Updates ---
+                const formatCurrency = (value) => value.toLocaleString('en-CA', { style: 'currency', currency: 'CAD' });
+                const formatPercent = (value) => `${value.toFixed(1)}%`;
+
+                document.getElementById('walmart-fee').textContent = formatCurrency(walmartFee);
+                document.getElementById('walmart-profit').textContent = formatCurrency(walmartProfit);
+                document.getElementById('walmart-margin').textContent = formatPercent(walmartMargin);
+
+                document.getElementById('ebay-fee').textContent = formatCurrency(ebayFee);
+                document.getElementById('ebay-profit').textContent = formatCurrency(ebayProfit);
+                document.getElementById('ebay-margin').textContent = formatPercent(ebayMargin);
+
+                document.getElementById('bestbuy-fee').textContent = formatCurrency(bestbuyFee);
+                document.getElementById('bestbuy-other-fee').textContent = formatCurrency(bestbuyAmortizedFee);
+                document.getElementById('bestbuy-profit').textContent = formatCurrency(bestbuyProfit);
+                document.getElementById('bestbuy-margin').textContent = formatPercent(bestbuyMargin);
+                
+                // --- Highlight Winner ---
+                const profits = {
+                    walmart: walmartProfit,
+                    ebay: ebayProfit,
+                    bestbuy: bestbuyProfit
+                };
+
+                let winner = '';
+                let maxProfit = -Infinity;
+
+                for (const platform in profits) {
+                    document.getElementById(`${platform}-card`).classList.remove('winner');
+                    if (profits[platform] > maxProfit) {
+                        maxProfit = profits[platform];
+                        winner = platform;
+                    }
+                }
+                
+                if (winner && maxProfit > 0) {
+                     document.getElementById(`${winner}-card`).classList.add('winner');
+                }
+            };
+
+            inputs.forEach(id => {
+                document.getElementById(id).addEventListener('input', calculateProfitability);
+            });
+
+            // Initial calculation
+            calculateProfitability();
+        });
+    </script>
+</body>
+</html>
